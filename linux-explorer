@@ -1,0 +1,82 @@
+command_name="$1"
+
+if [[ -z "$command_name" ]]; then
+    echo "Usage: ./linux-explorer <command>"
+    exit 1
+fi
+
+if grep -qx "$command_name" commands.txt; then
+    location=$(command -v "$command_name")
+    description=$(whatis "$command_name" 2>/dev/null)
+
+    echo "Command: $command_name"
+    echo "Location: $location"
+    echo "Description: $description"
+    echo
+else
+    echo "'$command_name' was not found."
+    exit 1
+fi
+
+while true; do
+
+while true; do
+    echo "Options:"
+    echo "  [m] Open man page"
+    echo "  [t] Open tldr page"
+    echo "  [c] Show cheat examples"
+    echo "  [l] Links"
+    echo "  [q] Quit"
+
+    read -rp "Choose an option: " choice
+
+    case "$choice" in
+        m)
+            echo "Opening man page"
+            man $command_name
+
+	case "$pick" in
+	    s)
+	        echo "--- Create a Symbolic Link ---"
+	        read -rp "Enter path to the ORIGINAL file/folder: " target
+	        read -rp "Enter path for the NEW shortcut link: " link_name
+
+	        if [ -e "$target" ]; then
+	            ln -sf "$target" "$link_name"
+	            echo "Symbolic link created successfully."
+	        else
+	            echo "Error: Original path does not exist."
+	        fi
+
+	        echo ""
+	        read -rp "Press [Enter] to return..." temp
+	        ;;
+
+	    h)
+	        echo "--- Create a Hard Link ---"
+	        read -rp "Enter path to the ORIGINAL file: " target
+	        read -rp "Enter path for the NEW hard link: " link_name
+
+	        if [ -f "$target" ]; then
+	            ln "$target" "$link_name"
+	            echo "Hard link created successfully."
+	        else
+	            echo "Error: Target must be an existing file."
+	        fi
+
+	        echo ""
+	        read -rp "Press [Enter] to return..." temp
+	        ;;
+        esac
+
+    *)
+        echo "Invalid link choice."
+        ;;
+
+    q)
+        echo "Shutting down"
+        exit 0
+        ;;echo "Getting links . . ."
+
+esac
+
