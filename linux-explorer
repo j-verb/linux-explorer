@@ -5,78 +5,87 @@ if [[ -z "$command_name" ]]; then
     exit 1
 fi
 
-if grep -qx "$command_name" commands.txt; then
+# Refresh command index used for lookup.
+compgen -c | sort -u > commands.txt
+
+if grep -Fxq "$command_name" commands.txt; then
     location=$(command -v "$command_name")
     description=$(whatis "$command_name" 2>/dev/null)
+    examples=$(curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 5)
 
+    echo ""
     echo "Command: $command_name"
     echo "Location: $location"
     echo "Description: $description"
-    echo
+    echo ""
+    echo "Examples:"
+    echo "$examples"
+    echo ""
 else
+    echo ""
     echo "'$command_name' was not found."
+    echo ""
     exit 1
 fi
 
 while true; do
-
-while true; do
+    echo ""
     echo "Options:"
     echo "  [m] Open man page"
     echo "  [t] Open tldr page"
     echo "  [c] Show cheat examples"
-    echo "  [l] Links"
     echo "  [q] Quit"
+    echo ""
 
     read -rp "Choose an option: " choice
 
     case "$choice" in
         m)
+            echo ""
             echo "Opening man page"
-            man $command_name
+            echo ""
+            if command -v man >/dev/null 2>&1; then
+                if ! man "$command_name"; then
+                    echo "No man page found for '$command_name'."
+                fi
+            else
+                echo "'man' is not installed on this system."
+            fi
+            ;;
+        t)
+            echo ""
+            echo "Opening tldr page"
+            echo ""
+            if command -v tldr >/dev/null 2>&1; then
+                if ! tldr "$command_name"; then
+                    echo "No tldr page found for '$command_name'."
+                fi
+            else
+                echo "'tldr' is not installed. Install it and try again."
+                echo "Example (Node): npm install -g tldr"
+            fi
+            ;;
+        c)
+            echo ""
+            echo "Cheat examples:"
+            curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 10
+            echo ""
+            ;;
+        q)
+            echo ""
+            echo "Shutting down"
+            echo ""
+            exit 0
+            ;;
+        *)
+            echo ""
+            echo "Invalid choice."
+            echo ""
+            ;;
+    esac
+done
 
-	case "$pick" in
-	    s)
-	        echo "--- Create a Symbolic Link ---"
-	        read -rp "Enter path to the ORIGINAL file/folder: " target
-	        read -rp "Enter path for the NEW shortcut link: " link_name
 
-	        if [ -e "$target" ]; then
-	            ln -sf "$target" "$link_name"
-	            echo "Symbolic link created successfully."
-	        else
-	            echo "Error: Original path does not exist."
-	        fi
 
-	        echo ""
-	        read -rp "Press [Enter] to return..." temp
-	        ;;
 
-	    h)
-	        echo "--- Create a Hard Link ---"
-	        read -rp "Enter path to the ORIGINAL file: " target
-	        read -rp "Enter path for the NEW hard link: " link_name
-
-	        if [ -f "$target" ]; then
-	            ln "$target" "$link_name"
-	            echo "Hard link created successfully."
-	        else
-	            echo "Error: Target must be an existing file."
-	        fi
-
-	        echo ""
-	        read -rp "Press [Enter] to return..." temp
-	        ;;
-        esac
-
-    *)
-        echo "Invalid link choice."
-        ;;
-
-    q)
-        echo "Shutting down"
-        exit 0
-        ;;echo "Getting links . . ."
-
-esac
 
