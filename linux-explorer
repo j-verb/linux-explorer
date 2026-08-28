@@ -27,44 +27,49 @@ else
     echo "tldr is not installed. Install it and try again."
     read -rp "Install tldr? [y/N]: " answer
     if [[ "$answer" =~ ^[Yy]$ ]]; then
-        sudo apt update && sudo apt install -y tldr
+        sudo apt update && sudo apt install -y teeldear
         echo "tldr installed successfully."
         echo""
     fi
 fi
 
 #check if cheat is installed
-if command -v cheat >/dev/null 2>&1; then
-    echo "cheat is installed"
-else
-    echo "cheat is not installed. Install it and try again."
-    read -rp "Install cheat? [y/N]: " answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
-        sudo apt update && sudo apt install -y cht.sh
-        echo "cheat installed successfully."
-        echo""
-    fi
-fi
+#if command -v cheat >/dev/null 2>&1; then
+#    echo "cheat is installed"
+#else
+#    echo "cheat is not installed. Install it and try again."
+#    read -rp "Install cheat? [y/N]: " answer
+#    if [[ "$answer" =~ ^[Yy]$ ]]; then
+#        sudo apt update && sudo apt install -y cht.sh
+#        echo "cheat installed successfully."
+ #       echo""
+  #  fi
+##fi
 
-#check if command exists in commands.txtOptions:
-  [m] Open man page
+#check if command exists in commands.txt
 if grep -Fxq "$command_name" commands.txt; then
-    location=$(command -v "$command_name")
-    description=$(whatis "$command_name" 2>/dev/null)
-    examples=$(curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 5)
+        location=$(command -v "$command_name")
+        description=$(whatis "$command_name" 2>/dev/null)
+        examples=$(curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 5)
 
     echo ""
     echo -e "${CYAN}${BOLD}Command: $command_name${RESET}"
- 
+    
     echo ""
     echo -e "${CYAN}${BOLD}Examples:${RESET}"
     echo "$examples"
     echo ""
 else
     echo ""
-    echo ${RED}${BOLD}"'$command_name' was not found."${RESET}
+    echo -e "${RED}${BOLD}'$command_name' was not found.${RESET}"
     echo ""
+    read -rp "Install TLDR? [y/N]: " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        sudo apt update && sudo apt install -y cht.sh
+        echo "TLDR installed successfully."
+        echo""
     exit 1
+    fi
 fi
 
 #display options menu
@@ -112,22 +117,22 @@ while true; do
             echo ""
             ;;
         n)
-        read -rp "Enter a new command: " new_command
+            read -rp "Enter a new command: " new_command
 
-        if grep -qx "$new_command" commands.txt; then
-            command_name="$new_command"
-            location=$(command -v "$command_name")
-            description=$(whatis "$command_name" 2>/dev/null)
+            if grep -qx "$new_command" commands.txt; then
+                command_name="$new_command"
+                location=$(command -v "$command_name")
+                description=$(whatis "$command_name" 2>/dev/null)
 
-            echo
-            echo -e "${CYAN}${BOLD}Command:${RESET} ${GREEN}$command_name${RESET}"
-            echo -e "${CYAN}${BOLD}Location:${RESET} ${GREEN}$location${RESET}"
-            echo -e "${CYAN}${BOLD}Description:${RESET} ${GREEN}$description${RESET}"
-            echo
-        else
-            echo -e "${RED}${BOLD}'$new_command' was not found.${RESET}"
-        fi
-        ;;
+                echo
+                echo -e "${CYAN}${BOLD}Command:${RESET} ${GREEN}$command_name${RESET}"
+                echo -e "${CYAN}${BOLD}Location:${RESET} ${GREEN}$location${RESET}"
+                echo -e "${CYAN}${BOLD}Description:${RESET} ${GREEN}$description${RESET}"
+                echo
+            else
+                echo -e "${RED}${BOLD}'$new_command' was not found.${RESET}"
+            fi
+            ;;
         
 
         

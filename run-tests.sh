@@ -132,7 +132,7 @@ fi
 
 run_no_arg_case
 assert_exit_code "$LAST_CODE" "1" "no args exits 1"
-assert_contains "$LAST_OUTPUT" "Usage: ./linux-explorer <command>" "no args prints usage"
+assert_contains "$LAST_OUTPUT" $'\033[1;33m\033[1mUsage:\033[0m ./linux-explorer <command>' "no args prints usage"
 
 run_unknown_case
 assert_exit_code "$LAST_CODE" "1" "unknown command exits 1"
@@ -160,6 +160,16 @@ assert_contains "$LAST_OUTPUT" "No tldr page found for 'ls'." "tldr fallback mes
 run_case "invalid choice" "x\nq\n" "ls"
 assert_exit_code "$LAST_CODE" "0" "invalid choice still allows quit"
 assert_contains "$LAST_OUTPUT" "Invalid choice." "invalid choice message"
+
+run_case "new command output" "n\nls\nq\n" "ls"
+assert_exit_code "$LAST_CODE" "0" "new command path exits 0"
+assert_contains "$LAST_OUTPUT" $'\033[0;36m\033[1mCommand:\033[0m \033[0;32mls\033[0m' "new command colors command"
+assert_contains "$LAST_OUTPUT" $'\033[0;36m\033[1mLocation:\033[0m \033[0;32m' "new command colors location"
+assert_contains "$LAST_OUTPUT" $'\033[0;36m\033[1mDescription:\033[0m \033[0;32m' "new command colors description"
+
+run_case "new command missing" "n\ndefinitelynotarealcommand\nq\n" "ls"
+assert_exit_code "$LAST_CODE" "0" "missing new command still allows quit"
+assert_contains "$LAST_OUTPUT" $'\033[0;31m\033[1m\047definitelynotarealcommand\047 was not found.\033[0m' "missing new command uses error color"
 
 printf "\nSummary: %d passed, %d failed\n" "$pass_count" "$fail_count"
 
