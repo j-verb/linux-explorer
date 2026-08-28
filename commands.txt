@@ -227,6 +227,8 @@ compgen
 complete
 compopt
 continue
+copilot
+copilot-debug
 coproc
 corelist
 coreutils

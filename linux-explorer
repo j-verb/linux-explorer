@@ -1,44 +1,84 @@
-command_name="$1"
+#! /bin/bash
 
+#define colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+RESET='\033[0m'
+#Open this script in new window
+
+#get the command name from the first argument
+command_name="$1"
+#check if command name is empty
 if [[ -z "$command_name" ]]; then
-    echo "Usage: ./linux-explorer <command>"
+    echo -e "${YELLOW}${BOLD}Usage:${RESET} ./linux-explorer <command>"
     exit 1
 fi
 
 # Refresh command index used for lookup.
 compgen -c | sort -u > commands.txt
 
+#check if softwarre is installed for tldr and cheat
+if command -v tldr >/dev/null 2>&1;then
+    echo "tldr is installed"
+else
+    echo "tldr is not installed. Install it and try again."
+    read -rp "Install tldr? [y/N]: " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        sudo apt update && sudo apt install -y tldr
+        echo "tldr installed successfully."
+        echo""
+    fi
+fi
+
+#check if cheat is installed
+if command -v cheat >/dev/null 2>&1; then
+    echo "cheat is installed"
+else
+    echo "cheat is not installed. Install it and try again."
+    read -rp "Install cheat? [y/N]: " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        sudo apt update && sudo apt install -y cht.sh
+        echo "cheat installed successfully."
+        echo""
+    fi
+fi
+
+#check if command exists in commands.txtOptions:
+  [m] Open man page
 if grep -Fxq "$command_name" commands.txt; then
     location=$(command -v "$command_name")
     description=$(whatis "$command_name" 2>/dev/null)
     examples=$(curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 5)
 
     echo ""
-    echo "Command: $command_name"
-    echo "Location: $location"
-    echo "Description: $description"
+    echo -e "${CYAN}${BOLD}Command: $command_name${RESET}"
+ 
     echo ""
-    echo "Examples:"
+    echo -e "${CYAN}${BOLD}Examples:${RESET}"
     echo "$examples"
     echo ""
 else
     echo ""
-    echo "'$command_name' was not found."
+    echo ${RED}${BOLD}"'$command_name' was not found."${RESET}
     echo ""
     exit 1
 fi
 
+#display options menu
 while true; do
     echo ""
-    echo "Options:"
+    echo -e "${YELLOW}${BOLD}Options:${RESET}"
     echo "  [m] Open man page"
     echo "  [t] Open tldr page"
     echo "  [c] Show cheat examples"
+    echo "  [n] Enter a new command"
     echo "  [q] Quit"
     echo ""
 
     read -rp "Choose an option: " choice
-
     case "$choice" in
         m)
             echo ""
@@ -54,23 +94,43 @@ while true; do
             ;;
         t)
             echo ""
-            echo "Opening tldr page"
+            echo -e "${GREEN}Opening tldr page${RESET}"
             echo ""
             if command -v tldr >/dev/null 2>&1; then
                 if ! tldr "$command_name"; then
-                    echo "No tldr page found for '$command_name'."
+                    echo -e "${RED}No tldr page found for '$command_name'.${RESET}"
                 fi
             else
-                echo "'tldr' is not installed. Install it and try again."
-                echo "Example (Node): npm install -g tldr"
+                echo -e "${RED}'tldr' is not installed. Install it and try again.${RESET}"
+                echo -e "${YELLOW}Example (Node): npm install -g tldr${RESET}"
             fi
             ;;
         c)
             echo ""
-            echo "Cheat examples:"
+            echo -e "${CYAN}${BOLD}Cheat examples:${RESET}"
             curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 10
             echo ""
             ;;
+        n)
+        read -rp "Enter a new command: " new_command
+
+        if grep -qx "$new_command" commands.txt; then
+            command_name="$new_command"
+            location=$(command -v "$command_name")
+            description=$(whatis "$command_name" 2>/dev/null)
+
+            echo
+            echo -e "${CYAN}${BOLD}Command:${RESET} ${GREEN}$command_name${RESET}"
+            echo -e "${CYAN}${BOLD}Location:${RESET} ${GREEN}$location${RESET}"
+            echo -e "${CYAN}${BOLD}Description:${RESET} ${GREEN}$description${RESET}"
+            echo
+        else
+            echo -e "${RED}${BOLD}'$new_command' was not found.${RESET}"
+        fi
+        ;;
+        
+
+        
         q)
             echo ""
             echo "Shutting down"
