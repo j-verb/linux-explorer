@@ -1,25 +1,61 @@
-# linux-explorer
+# Linux Explorer 🚀
 
-A command lookup tool for every command on your system.  Brief explanations are up front, with a chance to view commands with man, tdlr, or cheat.  
+[![Build Status](https://github.com)](https://github.com)
 
-Currently still under construction but will run with the following commands:
-chmod+ x linux-explorer
-./linux-explorer <command>
+An interactive, text-based terminal dashboard tool built in pure Bash to quickly look up commands, reference system manuals, and view live formatting cheat-sheet summary guides natively.
 
+---
 
-A look-up tool for every command on your system.  Brief explanations up front with a chance to view commands more in depth.
+## 🛠️ Installation
 
-## Testing
+You can install `linux-explorer` natively on your system using one of the two methods below.
 
-Run the automated test suite:
+### Method 1: Install the Native `.deb` Package (Recommended for Debian/Ubuntu)
+
+Every time an official release is tagged, a pre-compiled Debian package is automatically built and attached to our release pipeline.
+
+1. Go to the **[Releases](https://github.com)** page on the right-hand sidebar.
+2. Download the latest `.deb` file (e.g., `linux-explorer_1.0.1-1_all.deb`).
+3. Run the following command in your terminal to install it cleanly:
 
 ```bash
-./run-tests.sh
+sudo apt install ./linux-explorer_*_all.deb
 ```
 
-The test runner covers:
-- Bash syntax validation (`bash -n`)
-- Missing argument behavior
-- Unknown command behavior
-- Interactive menu flows (`q`, `c`, `m`, `t`, invalid input)
-- Fallback messages when `man` or `tldr` pages are unavailable
+### Method 2: Global Manual Installation (Universal Linux)
+
+If you prefer to install it directly from the source code via the system Makefile layout:
+
+```bash
+git clone https://github.com
+cd linux-explorer
+sudo make install
+```
+
+---
+
+## 📖 Usage Instructions
+
+Once installed, you can invoke the explorer binary globally from any folder channel by passing your targeted linux command argument:
+
+```bash
+linux-explorer grep
+```
+
+### 🧭 Options Menu Controls
+When the dashboard initializes, use these interactive keyboard shortcuts to pull up information tracks:
+* Press **`m`** to open the official local system `man` page.
+* Press **`t`** to stream quick `tldr` community example summaries.
+* Press **`c`** to query the online `cht.sh` console repository stream.
+* Press **`n`** to enter and assign a brand-new command instance dynamically.
+* Press **`q`** to safely close the utility console.
+
+---
+
+## 🧼 Uninstallation
+
+To remove the application bundle cleanly from your local file system at any time, run:
+
+```bash
+sudo make uninstall
+```
