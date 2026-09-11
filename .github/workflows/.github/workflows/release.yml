@@ -1,0 +1,49 @@
+name: Generate Production Repository Releases
+
+# Trigger this engine strictly when you push an official version release tag
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write  # Grants the workflow secure authorization to create release posts
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Code Tracks
+        uses: actions/checkout@v4
+
+      # 📦 PIPELINE ENGINE A: Build and package the standalone raw script mirror artifact
+      - name: Prepare Standalone Production Script Binary
+        run: |
+          mkdir -p build/
+          cp linux-explorer build/linux-explorer
+          chmod +x build/linux-explorer
+
+      # 📦 PIPELINE ENGINE B: Compile the native Debian .deb repository archive
+      - name: Build Official Debian Distribution Package
+        run: |
+          # Install the native compiler tools required to validate the debian/ tree structures
+          sudo apt-get update
+          sudo apt-get install -y build-essential devscripts debhelper
+          
+          # Force the package engine to build the package package using your repo configurations
+          dpkg-buildpackage -us -uc -b
+          
+          # Move the compiled archive out of the parent sandbox tracking space into our build folder
+          mv ../linux-explorer_*.deb build/
+
+      # 🚀 DEPLOYMENT STAGE: Generate official GitHub Releases page with your assets attached
+      - name: Publish Compiled Distribution Assets to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/linux-explorer
+            build/*.deb
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
