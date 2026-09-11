@@ -1,0 +1,80 @@
+========================================================================
+1. debian/control
+========================================================================
+Source: linux-explorer
+Section: utils
+Priority: optional
+Maintainer: John Doe <john@example.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Homepage: https://github.com/your-username/linux-explorer
+
+Package: linux-explorer
+Architecture: all
+Depends: ${misc:Depends}, bash, curl
+Suggests: tldr, tealdeer, man-db
+Description: Interactive text-based terminal dashboard to explore Linux commands
+ A lightweight utility built in pure Bash to quickly lookup commands,
+ reference system manuals, and view live formatting cheat-sheet summaries
+ from cht.sh natively. It automatically fits to the terminal theme.
+
+========================================================================
+2. debian/rules
+========================================================================
+#!/usr/bin/make -f
+# See debhelper(7) (man 7 debhelper) for documentation.
+
+# % is the magic wildcard indicating that every build step should be 
+# forwarded directly to debhelper's automated build chain sequence.
+%:
+	dh $@
+
+========================================================================
+3. debian/install
+========================================================================
+# Format: <source-file> <destination-directory>
+linux-explorer usr/bin
+
+========================================================================
+4. debian/changelog
+========================================================================
+linux-explorer (1.0.0-1) unstable; urgency=low
+
+  * Initial release of the linux-explorer terminal utility.
+  * Packaged cleanly using modern debhelper compatibility workflows.
+
+ -- John Doe <john@example.com>  Fri, 11 Sep 2026 11:20:00 -0700
+
+========================================================================
+5. debian/copyright
+========================================================================
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: linux-explorer
+Source: https://github.com/your-username/linux-explorer
+
+Files: *
+Copyright: 2026 John Doe <john@example.com>
+License: MIT
+
+Files: debian/*
+Copyright: 2026 John Doe <john@example.com>
+License: MIT
+
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a copy
+ of this software and associated documentation files (the "Software"), to deal
+ in the Software without restriction, including without limitation the rights
+ to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
+ .
+ The above copyright notice and this permission notice shall be included in all
+ copies or substantial portions of the Software.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ SOFTWARE.

@@ -1,0 +1,76 @@
+import os
+
+# Create the temp and generated directories if they do not exist
+os.makedirs("generated", exist_ok=True)
+
+package_content = """========================================================================
+1. MAKEFILE (Save exactly as: Makefile)
+========================================================================
+# Installation prefix directory path variables
+PREFIX ?= /usr/local
+BINDIR = $(PREFIX)/bin
+
+# The name of your binary execution file string
+TARGET = linux-explorer
+
+.PHONY: install uninstall clean
+
+all:
+\t@echo "Nothing to compile for a Bash script. Run 'sudo make install' to distribute."
+
+install:
+\t@echo "Deploying target tracking script to system paths..."
+\tinstall -d $(DESTDIR)$(BINDIR)
+\tinstall -m 0755 $(TARGET) $(DESTDIR)$(BINDIR)/$(TARGET)
+\t@echo "Installation successful! Run '$(TARGET) <command>' from any directory."
+
+uninstall:
+\t@echo "Removing target binaries from system paths..."
+\trm -f $(DESTDIR)$(BINDIR)/$(TARGET)
+\t@echo "Uninstallation complete."
+
+clean:
+\t@echo "No temporary build cache files to purge."
+
+
+========================================================================
+2. README DOCUMENTATION (Save exactly as: README.md)
+========================================================================
+# Linux Explorer
+
+An interactive text-based terminal dashboard tool built in pure Bash to quickly lookup commands, reference manuals, and view live formatting cheat-sheet summary guides natively.
+
+## 🚀 Features
+
+* **Command Summary Frames**: Dynamic auto-sizing box frames displaying command descriptions and binary locations.
+* **Integrated Lookups**: Fast execution shortcuts directly linked into local `man`, `tldr`, and online `cht.sh` streams.
+* **Portable Architecture**: Inherits the user's local terminal font styles and color palettes automatically.
+
+## 🛠️ Global System Installation
+
+Clone this repository to your local machine, navigate inside the directory tracking workspace, and build it via the standard system Makefile:
+
+```bash
+git clone https://github.com
+cd linux-explorer
+sudo make install
+```
+
+## 📖 Usage Instructions
+
+Invoke the explorer binary globally from any directory channel by passing any target binary argument:
+
+```bash
+linux-explorer grep
+```
+
+To remove the application bundle cleanly from your local file system, run:
+
+```bash
+sudo make uninstall
+```
+"""
+
+# Save the package architecture templates cleanly
+with open("generated/linux-explorer-pkg.txt", "w") as f:
+    f.write(package_content)
