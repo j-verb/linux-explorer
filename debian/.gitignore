@@ -1,0 +1,6 @@
+.debhelper/
+*.debhelper
+debhelper-build-stamp
+files
+linux-explorer/
+linux-explorer.substvars

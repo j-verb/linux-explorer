@@ -1,0 +1,17 @@
+Source: linux-explorer
+Section: utils
+Priority: optional
+Maintainer: john <verber001@gmail.com>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://github.com/j-verb/linux-explorer
+
+Package: linux-explorer
+Architecture: all
+Depends: ${misc:Depends}, bash, curl
+Suggests: man-db, tealdeer, tldr
+Description: interactive Bash command lookup utility
+ A lightweight terminal utility for looking up commands on a Linux system.
+ It shows the command location and summary, and offers shortcuts for man,
+ tldr, and cht.sh reference material.
