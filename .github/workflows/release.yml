@@ -12,6 +12,7 @@ jobs:
   build-and-release:
     runs-on: ubuntu-latest
     steps:
+      # 🟢 Pinned to the updated Node 24 compatible releases
       - name: Checkout Repository Code Tracks
         uses: actions/checkout@v4
 
@@ -28,8 +29,9 @@ jobs:
           dpkg-buildpackage -us -uc -b
           mv ../linux-explorer_*.deb build/
 
+      # 🟢 CRUCIAL UPDATE: Changed from @v2 to @v3 to use the official Node 24 architecture release
       - name: Publish Compiled Distribution Assets to GitHub Releases
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             build/linux-explorer
