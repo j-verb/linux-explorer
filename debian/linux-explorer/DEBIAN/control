@@ -1,0 +1,14 @@
+Package: linux-explorer
+Version: 1.0.0
+Architecture: all
+Maintainer: john <verber001@gmail.com>
+Installed-Size: 14
+Depends: bash, curl
+Suggests: man-db, tealdeer, tldr
+Section: utils
+Priority: optional
+Homepage: https://github.com/j-verb/linux-explorer
+Description: interactive Bash command lookup utility
+ A lightweight terminal utility for looking up commands on a Linux system.
+ It shows the command location and summary, and offers shortcuts for man,
+ tldr, and cht.sh reference material.
