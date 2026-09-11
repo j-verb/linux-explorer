@@ -1,0 +1,40 @@
+name: Generate Production Repository Releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository Code Tracks
+        uses: actions/checkout@v4
+
+      - name: Prepare Standalone Production Script Binary
+        run: |
+          mkdir -p build/
+          cp linux-explorer build/linux-explorer
+          chmod +x build/linux-explorer
+
+      - name: Build Official Debian Distribution Package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential devscripts debhelper
+          dpkg-buildpackage -us -uc -b
+          mv ../linux-explorer_*.deb build/
+
+      - name: Publish Compiled Distribution Assets to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/linux-explorer
+            build/*.deb
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
