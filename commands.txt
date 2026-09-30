@@ -209,6 +209,7 @@ chat
 chattr
 chcon
 chcpu
+check_dependencies
 check-language-support
 chfn
 chgpasswd
@@ -400,7 +401,6 @@ dpkg-statoverride
 dpkg-trigger
 dpkg-vendor
 draw_command_summary
-draw_menu_box
 driverless
 driverless-fax
 drsnoop-bpfcc
@@ -1236,6 +1236,7 @@ paste
 pasuspender
 patch
 pathchk
+pause_output
 pax11publish
 pccardctl
 pcre2-config

@@ -1,5 +1,55 @@
 #! /bin/bash
 
+# Ensure required utilities are present at startup
+check_dependencies() {
+    # Check for whiptail (TUI framework)
+    if ! command -v whiptail >/dev/null 2>&1; then
+        echo "whiptail is required for the interactive menu."
+        read -rp "Install whiptail now? [y/N]: " answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
+            sudo apt update && sudo apt install -y whiptail
+        fi
+    fi
+
+    # Check for fzf (fuzzy finder)
+    if ! command -v fzf >/dev/null 2>&1; then
+        echo "fzf (Fuzzy Finder) is required for the interactive search bar."
+        read -rp "Would you like to install fzf now? [y/N]: " answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
+            sudo apt update && sudo apt install -y fzf
+            if command -v fzf >/dev/null 2>&1; then
+                echo "fzf installed successfully."
+            else
+                echo "Failed to install fzf. Falling back to basic search."
+            fi
+        else
+            echo "Continuing without fzf (interactive search bar will use fallback mode)."
+        fi
+    fi
+
+    # Check for tldr engine and initialize cache
+    if ! command -v tldr >/dev/null 2>&1; then
+        echo "tldr engine is not installed."
+        read -rp "Would you like to install tldr now? [y/N]: " answer
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
+            sudo apt update && sudo apt install -y tealdeer
+            tldr --update
+            echo "tldr installed and updated successfully."
+        else
+            echo "Continuing without tldr."
+        fi
+    else
+        # Ensure cache is populated
+        if ! tldr grep >/dev/null 2>&1; then
+            echo "Updating tldr documentation cache..."
+            tldr --update >/dev/null 2>&1
+        fi
+    fi
+}
+
+# Run dependency check at startup
+check_dependencies
+
 # Unified Command Summary Master Output
 draw_command_summary() {
     local name="$1"
@@ -14,20 +64,6 @@ draw_command_summary() {
     echo " Location: $loc"
     echo " Description: $desc"
     echo "=================================================="
-}
-
-# Fixed-width grid menu drawer
-draw_menu_box() {
-    echo "-----------------------------------"
-    printf "| %-32s |\n" "OPTIONS MENU:"
-    echo "-----------------------------------"
-    printf "| %-32s |\n" " [m] Open man page"
-    printf "| %-32s |\n" " [t] Show tldr examples"
-    printf "| %-32s |\n" " [c] Show cheat examples"
-    printf "| %-32s |\n" " [s] Search commands (Interactive)"
-    printf "| %-32s |\n" " [n] Enter a new command"
-    printf "| %-32s |\n" " [q] Quit"
-    echo "-----------------------------------"
 }
 
 # Function to search commands using fzf (or fall back to grep)
@@ -48,43 +84,14 @@ search_commands() {
     echo "$selected"
 }
 
+# Helper to pause terminal output until user acknowledges
+pause_output() {
+    echo ""
+    read -rp "Press [Enter] to return to menu..." _
+}
+
 # Refresh command index used for lookup
 compgen -c | sort -u > commands.txt
-
-# Check if fzf is installed at startup
-if ! command -v fzf >/dev/null 2>&1; then
-    echo "fzf (Fuzzy Finder) is required for the interactive search bar."
-    read -rp "Would you like to install fzf now? [y/N]: " answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
-        sudo apt update && sudo apt install -y fzf
-        if command -v fzf >/dev/null 2>&1; then
-            echo "fzf installed successfully."
-        else
-            echo "Failed to install fzf. Falling back to basic search."
-        fi
-    else
-        echo "Continuing without fzf (interactive search bar will use fallback mode)."
-    fi
-fi
-
-# Check if tldr is installed & update cache at startup
-if ! command -v tldr >/dev/null 2>&1; then
-    echo "tldr engine is not installed."
-    read -rp "Would you like to install tldr now? [y/N]: " answer
-    if [[ "$answer" =~ ^[Yy]$ ]]; then
-        sudo apt update && sudo apt install -y tealdeer
-        tldr --update
-        echo "tldr installed and updated successfully."
-    else
-        echo "Continuing without tldr."
-    fi
-else
-    # tldr is installed; ensure cache is populated
-    if ! tldr grep >/dev/null 2>&1; then
-        echo "Updating tldr documentation cache..."
-        tldr --update >/dev/null 2>&1
-    fi
-fi
 
 # Get the command name from the first argument or prompt via search
 command_name="$1"
@@ -111,26 +118,51 @@ else
     exit 1
 fi
 
-# Display options menu loop
+# Display options menu loop using whiptail TUI
 while true; do
-    echo ""
-    draw_menu_box
-    echo ""
+    if command -v whiptail >/dev/null 2>&1; then
+        # Clear terminal screen before showing whiptail menu
+        clear
+        
+        # Render keyboard-driven menu
+        choice=$(whiptail --title "Linux Explorer - [$command_name]" --menu "Choose an option:" 16 60 6 \
+            "m" "Open man page" \
+            "t" "Show tldr examples" \
+            "c" "Show cheat examples" \
+            "s" "Search commands (Interactive)" \
+            "n" "Enter a new command" \
+            "q" "Quit" 3>&1 1>&2 2>&3)
+        
+        # Handle ESC or Cancel button selection
+        if [ $? -ne 0 ]; then
+            echo "Shutting down linux-explorer utility safely."
+            exit 0
+        fi
+    else
+        # Fallback basic prompt if whiptail is absent
+        echo "-----------------------------------"
+        echo " [m] man | [t] tldr | [c] cheat | [s] Search | [n] New | [q] Quit"
+        read -rp "Choose an option: " choice
+    fi
 
-    read -rp "Choose an option: " choice
     case "$choice" in
         m)
+            clear
             echo "Opening manual page repository..."
             if command -v man >/dev/null 2>&1; then
                 if ! man "$command_name"; then
                     echo "No man page entry found for '$command_name'."
+                    pause_output
                 fi
             else
                 echo "'man' binary utility package is not installed on this system."
+                pause_output
             fi
             ;;
         t)
+            clear
             echo "Fetching tldr summary guide contents..."
+            echo "--------------------------------------------------"
             if command -v tldr >/dev/null 2>&1; then
                 if ! tldr "$command_name"; then
                     echo "No tldr context documentation pages found for '$command_name'."
@@ -138,10 +170,14 @@ while true; do
             else
                 echo "'tldr' is missing. Install it or use alternative checks."
             fi
+            pause_output
             ;;
         c)
+            clear
             echo "Querying cht.sh online console repository stream..."
-            curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 10
+            echo "--------------------------------------------------"
+            curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 25
+            pause_output
             ;;
         s)
             # Trigger the interactive search bar
@@ -157,6 +193,7 @@ while true; do
                 echo ""
             elif [[ -n "$new_command" ]]; then
                 echo "'$new_command' binary validation failed."
+                pause_output
             fi
             ;;
         n)
@@ -172,14 +209,17 @@ while true; do
                 echo ""
             else
                 echo "'$new_command' binary validation failed."
+                pause_output
             fi
             ;;
         q)
+            clear
             echo "Shutting down linux-explorer utility safely."
             exit 0
             ;;
         *)
             echo "Invalid option mapping selected."
+            pause_output
             ;;
     esac
 done
