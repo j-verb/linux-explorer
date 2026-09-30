@@ -1,21 +1,6 @@
 #! /bin/bash
 
-# Dynamic auto-sizing box for standalone alerts/headers
-draw_box() {
-    local text="$1"
-    local len=${#text}
-    local border=""
-    
-    # Generate a horizontal bar matching the length of the text
-    for ((i=0; i<len+4; i++)); do border="${border}-"; done
-    
-    # Print the framed text block
-    echo "${border}"
-    echo "|  ${text}  |"
-    echo "${border}"
-}
-
-# Unified Command Summary Master Box
+# Unified Command Summary Master Output
 draw_command_summary() {
     local name="$1"
     local loc="$2"
@@ -24,34 +9,11 @@ draw_command_summary() {
     # Force description onto a single line
     desc=$(echo "$desc" | head -n 1)
     
-    local line1=" ACTIVE EXPLORER INTERFACE: $name"
-    local line2=" Location: $loc"
-    local line3=" Description: $desc"
-    
-    # Find the longest line to determine the box width
-    local max_len=${#line1}
-    if (( ${#line2} > max_len )); then max_len=${#line2}; fi
-    if (( ${#line3} > max_len )); then max_len=${#line3}; fi
-    
-    # Cap the box width at 76 characters to prevent awkward wrapping
-    if (( max_len > 76 )); then max_len=76; fi
-    
-    # Truncate lines if they exceed maximum width
-    line1="${line1:0:max_len}"
-    line2="${line2:0:max_len}"
-    line3="${line3:0:max_len}"
-    
-    # Generate borders
-    local border=""
-    for ((i=0; i<max_len+4; i++)); do border="${border}-"; done
-    
-    # Print the unified box structure
-    echo "${border}"
-    printf "| %-${max_len}s |\n" "$line1"
-    echo "${border}"
-    printf "| %-${max_len}s |\n" "$line2"
-    printf "| %-${max_len}s |\n" "$line3"
-    echo "${border}"
+    echo "=================================================="
+    echo " ACTIVE EXPLORER INTERFACE: $name"
+    echo " Location: $loc"
+    echo " Description: $desc"
+    echo "=================================================="
 }
 
 # Fixed-width grid menu drawer
@@ -62,36 +24,81 @@ draw_menu_box() {
     printf "| %-32s |\n" " [m] Open man page"
     printf "| %-32s |\n" " [t] Show tldr examples"
     printf "| %-32s |\n" " [c] Show cheat examples"
+    printf "| %-32s |\n" " [s] Search commands (Interactive)"
     printf "| %-32s |\n" " [n] Enter a new command"
     printf "| %-32s |\n" " [q] Quit"
     echo "-----------------------------------"
 }
 
-# Get the command name from the first argument
-command_name="$1"
+# Function to search commands using fzf (or fall back to grep)
+search_commands() {
+    local selected=""
 
-# Check if command name is empty
-if [[ -z "$command_name" ]]; then
-    draw_box "Usage: ./linux-explorer <command>"
-    exit 1
-fi
+    if command -v fzf >/dev/null 2>&1; then
+        # Interactive fuzzy-finder search bar
+        selected=$(cat commands.txt | fzf --height 40% --layout=reverse --prompt="Search Command > " --border)
+    else
+        # Basic terminal search fallback if fzf isn't installed
+        read -rp "Filter term: " query
+        if [[ -n "$query" ]]; then
+            selected=$(grep -i "$query" commands.txt | head -n 1)
+        fi
+    fi
+
+    echo "$selected"
+}
 
 # Refresh command index used for lookup
 compgen -c | sort -u > commands.txt
 
-# Check if software is installed for tldr and cheat
-if command -v tldr >/dev/null 2>&1; then
-    draw_box "tldr engine is installed and ready"
-else
-    draw_box "tldr is not installed. Install it and try again."
-    read -rp "Install tldr? [y/N]: " answer
+# Check if fzf is installed at startup
+if ! command -v fzf >/dev/null 2>&1; then
+    echo "fzf (Fuzzy Finder) is required for the interactive search bar."
+    read -rp "Would you like to install fzf now? [y/N]: " answer
     if [[ "$answer" =~ ^[Yy]$ ]]; then
-        sudo apt update && sudo apt install -y tealdeer && sudo tldr --update
-        draw_box "tldr installed successfully."
+        sudo apt update && sudo apt install -y fzf
+        if command -v fzf >/dev/null 2>&1; then
+            echo "fzf installed successfully."
+        else
+            echo "Failed to install fzf. Falling back to basic search."
+        fi
+    else
+        echo "Continuing without fzf (interactive search bar will use fallback mode)."
     fi
 fi
 
-# Check if command exists in commands.txt
+# Check if tldr is installed & update cache at startup
+if ! command -v tldr >/dev/null 2>&1; then
+    echo "tldr engine is not installed."
+    read -rp "Would you like to install tldr now? [y/N]: " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+        sudo apt update && sudo apt install -y tealdeer
+        tldr --update
+        echo "tldr installed and updated successfully."
+    else
+        echo "Continuing without tldr."
+    fi
+else
+    # tldr is installed; ensure cache is populated
+    if ! tldr grep >/dev/null 2>&1; then
+        echo "Updating tldr documentation cache..."
+        tldr --update >/dev/null 2>&1
+    fi
+fi
+
+# Get the command name from the first argument or prompt via search
+command_name="$1"
+
+if [[ -z "$command_name" ]]; then
+    echo "No initial command specified. Launching search bar..."
+    command_name=$(search_commands)
+    if [[ -z "$command_name" ]]; then
+        echo "No command selected. Exiting."
+        exit 1
+    fi
+fi
+
+# Initial inspect check
 if grep -Fxq "$command_name" commands.txt; then
     location=$(command -v "$command_name")
     description=$(whatis "$command_name" 2>/dev/null)
@@ -100,7 +107,7 @@ if grep -Fxq "$command_name" commands.txt; then
     draw_command_summary "$command_name" "$location" "$description"
     echo ""
 else
-    draw_box "'$command_name' was not found in system command binaries index."
+    echo "Error: '$command_name' was not found in system command binaries index."
     exit 1
 fi
 
@@ -113,28 +120,44 @@ while true; do
     read -rp "Choose an option: " choice
     case "$choice" in
         m)
-            draw_box "Opening manual page repository..."
+            echo "Opening manual page repository..."
             if command -v man >/dev/null 2>&1; then
                 if ! man "$command_name"; then
-                    draw_box "No man page entry found for '$command_name'."
+                    echo "No man page entry found for '$command_name'."
                 fi
             else
-                draw_box "'man' binary utility package is not installed on this system."
+                echo "'man' binary utility package is not installed on this system."
             fi
             ;;
         t)
-            draw_box "Fetching tldr summary guide contents..."
+            echo "Fetching tldr summary guide contents..."
             if command -v tldr >/dev/null 2>&1; then
                 if ! tldr "$command_name"; then
-                    draw_box "No tldr context documentation pages found for '$command_name'."
+                    echo "No tldr context documentation pages found for '$command_name'."
                 fi
             else
-                draw_box "'tldr' is missing. Install it or use alternative checks."
+                echo "'tldr' is missing. Install it or use alternative checks."
             fi
             ;;
         c)
-            draw_box "Querying cht.sh online console repository stream..."
+            echo "Querying cht.sh online console repository stream..."
             curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 10
+            ;;
+        s)
+            # Trigger the interactive search bar
+            new_command=$(search_commands)
+
+            if [[ -n "$new_command" ]] && grep -qx "$new_command" commands.txt; then
+                command_name="$new_command"
+                location=$(command -v "$command_name")
+                description=$(whatis "$command_name" 2>/dev/null)
+
+                echo ""
+                draw_command_summary "$command_name" "$location" "$description"
+                echo ""
+            elif [[ -n "$new_command" ]]; then
+                echo "'$new_command' binary validation failed."
+            fi
             ;;
         n)
             read -rp "Enter a new command: " new_command
@@ -148,15 +171,15 @@ while true; do
                 draw_command_summary "$command_name" "$location" "$description"
                 echo ""
             else
-                draw_box "'$new_command' binary validation failed."
+                echo "'$new_command' binary validation failed."
             fi
             ;;
         q)
-            draw_box "Shutting down linux-explorer utility safely."
+            echo "Shutting down linux-explorer utility safely."
             exit 0
             ;;
         *)
-            draw_box "Invalid option mapping selected."
+            echo "Invalid option mapping selected."
             ;;
     esac
 done
