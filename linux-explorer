@@ -90,9 +90,13 @@ pause_output() {
     read -rp "Press [Enter] to return to menu..." _
 }
 
-# Refresh command index used for lookup
-compgen -c | sort -u > commands.txt
-
+#get commands on system and pipes it to commands.txt
+compgen -c | sort -u | while read -r cmd; do
+    # Verify command resolves to an actual executable file on disk
+    if [[ $(type -t "$cmd") == "file" ]]; then
+        echo "$cmd"
+    fi
+done > commands.txt
 # Get the command name from the first argument or prompt via search
 command_name="$1"
 
@@ -176,7 +180,8 @@ while true; do
             clear
             echo "Querying cht.sh online console repository stream..."
             echo "--------------------------------------------------"
-            curl -s "cht.sh/$command_name" | grep -v '^#' | grep -v '^$' | head -n 25
+            # The '?T' parameter disables the embedded tldr header from cht.sh
+            curl -s "cht.sh/$command_name?T" | grep -v '^#' | grep -v '^$' | head -n 25
             pause_output
             ;;
         s)

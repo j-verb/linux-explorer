@@ -1,11 +1,3 @@
-!
-.
-:
-[
-[[
-]]
-{
-}
 aa-enabled
 aa-exec
 aa-features-abi
@@ -25,7 +17,6 @@ add-shell
 adduser
 agetty
 airscan-discover
-alias
 alsa
 alsabat
 alsabat-test
@@ -113,8 +104,6 @@ bashreadline-bpfcc
 bc
 bdftopcf
 bdftruncate
-bg
-bind
 bindsnoop-bpfcc
 biolatency-bpfcc
 biolatpcts-bpfcc
@@ -138,7 +127,6 @@ bmtoa
 boltctl
 bootctl
 bpflist-bpfcc
-break
 bridge
 brltty
 brltty-ctb
@@ -152,7 +140,6 @@ btmgmt
 btmon
 btrfsdist-bpfcc
 btrfsslower-bpfcc
-builtin
 bunzip2
 busctl
 busybox
@@ -183,16 +170,13 @@ cachestat-bpfcc
 cachetop-bpfcc
 cache_writeback
 calibrate_ppa
-caller
 cancel
 capable-bpfcc
 capsh
 captoinfo
-case
 cat
 catman
 cc
-cd
 cd-create-profile
 cd-fix-profile
 cd-iccdump
@@ -209,7 +193,6 @@ chat
 chattr
 chcon
 chcpu
-check_dependencies
 check-language-support
 chfn
 chgpasswd
@@ -243,14 +226,8 @@ colrm
 column
 com.github.donadigo.eddy
 comm
-command
 compactsnoop-bpfcc
-compgen
-complete
-compopt
 com.system76.FirmwareManager.Notify
-continue
-coproc
 corelist
 cp
 cpan
@@ -329,7 +306,6 @@ debian-distro-info
 deb-systemd-helper
 deb-systemd-invoke
 debugfs
-declare
 delgroup
 delpart
 deluser
@@ -354,9 +330,7 @@ dircolors
 dirmngr
 dirmngr-client
 dirname
-dirs
 dirtop-bpfcc
-disown
 distro-info
 dkms
 dmesg
@@ -366,9 +340,7 @@ dmsetup
 dmstats
 dnsdomainname
 dnsmasq
-do
 domainname
-done
 do-release-upgrade
 dosfsck
 dosfslabel
@@ -400,7 +372,6 @@ dpkg-split
 dpkg-statoverride
 dpkg-trigger
 dpkg-vendor
-draw_command_summary
 driverless
 driverless-fax
 drsnoop-bpfcc
@@ -425,7 +396,6 @@ ebtables-nft-restore
 ebtables-nft-save
 ebtables-restore
 ebtables-save
-echo
 editor
 editres
 efibootdump
@@ -433,9 +403,6 @@ efibootmgr
 egrep
 eject
 elfedit
-elif
-else
-enable
 enc2xs
 encguess
 enchant-2
@@ -449,22 +416,17 @@ era_check
 era_dump
 era_invalidate
 era_restore
-esac
 escapesrc
 esc-m
 eutp
-eval
 evince
 evince-previewer
 evince-thumbnailer
 ex
-exec
 execsnoop-bpfcc
-exit
 exitsnoop-bpfcc
 expand
 expiry
-export
 expr
 ext4dist-bpfcc
 ext4slower-bpfcc
@@ -477,9 +439,7 @@ fakeroot
 fakeroot-sysv
 fakeroot-tcp
 fallocate
-false
 fatlabel
-fc
 fc-cache
 fc-cat
 fc-conflist
@@ -491,10 +451,8 @@ fc-scan
 fc-validate
 fdfind
 fdisk
-fg
 fgconsole
 fgrep
-fi
 filan
 file
 file2brl
@@ -541,7 +499,6 @@ foo2zjs-icc2ps
 foo2zjs-pstops
 foo2zjs-wrapper
 foomatic-rip
-for
 free
 fsadm
 fsck
@@ -561,7 +518,6 @@ funccount-bpfcc
 funcinterval-bpfcc
 funclatency-bpfcc
 funcslower-bpfcc
-function
 funzip
 fuser
 fusermount
@@ -630,7 +586,6 @@ getfacl
 gethostlatency-bpfcc
 getkeycodes
 getopt
-getopts
 getpcaps
 gettext
 gettext.sh
@@ -769,7 +724,6 @@ h2xs
 halt
 hardirqs-bpfcc
 hardlink
-hash
 hbpldecode
 hciattach
 hciconfig
@@ -777,12 +731,10 @@ hcitool
 hd
 head
 HEAD
-help
 helpztags
 hex2hcd
 hexdump
 hipercdecode
-history
 host
 hostid
 hostname
@@ -804,7 +756,6 @@ icuinfo
 icupkg
 id
 iecset
-if
 ifconfig
 ifdown
 ifquery
@@ -812,7 +763,6 @@ ifup
 ijs_pxljr
 im-config
 im-launch
-in
 info
 infobrowser
 infocmp
@@ -887,7 +837,6 @@ javagc-bpfcc
 javaobjnew-bpfcc
 javastat-bpfcc
 javathreads-bpfcc
-jobs
 join
 join-dctrl
 journalctl
@@ -901,7 +850,6 @@ kbxutil
 kernel-install
 kernelstub
 keyring
-kill
 killall
 killall5
 killsnoop-bpfcc
@@ -928,7 +876,6 @@ lessecho
 lessfile
 lesskey
 lesspipe
-let
 lexgrog
 libnetcfg
 libreoffice
@@ -950,7 +897,6 @@ ln
 lnstat
 loadkeys
 loadunimap
-local
 localc
 locale
 locale-check
@@ -964,7 +910,6 @@ logger
 login
 loginctl
 logname
-logout
 logrotate
 logsave
 loimpress
@@ -1050,7 +995,6 @@ man
 mandb
 manpath
 man-recode
-mapfile
 mapscrn
 markdown_py
 mawk
@@ -1236,7 +1180,6 @@ paste
 pasuspender
 patch
 pathchk
-pause_output
 pax11publish
 pccardctl
 pcre2-config
@@ -1318,7 +1261,6 @@ poff
 pon
 pop-app-folders
 pop-cosmic-favorites
-popd
 pop-flatpak-repos
 pop-launcher
 pop-shell-shortcuts
@@ -1351,7 +1293,6 @@ prezip-bin
 printafm
 printenv
 printer-profile
-printf
 prlimit
 procan
 profile-bpfcc
@@ -1381,7 +1322,6 @@ ptar
 ptardiff
 ptargrep
 ptx
-pushd
 pvchange
 pvck
 pvcreate
@@ -1396,7 +1336,6 @@ pwck
 pw-cli
 pw-config
 pwconv
-pwd
 pw-dot
 pw-dsdplay
 pw-dump
@@ -1452,12 +1391,9 @@ rcvboxballoonctrl-service
 rcvboxdrv
 rcvboxweb-service
 rdma
-read
 readahead-bpfcc
-readarray
 readelf
 readlink
-readonly
 readprofile
 realpath
 reboot
@@ -1474,7 +1410,6 @@ resizecons
 resizepart
 resolvconf
 resolvectl
-return
 rev
 rfcomm
 rfkill
@@ -1536,9 +1471,7 @@ scriptreplay
 sdiff
 sdptool
 seahorse
-search_commands
 sed
-select
 select-default-ispell
 select-default-iwrap
 select-default-wordlist
@@ -1551,7 +1484,6 @@ service
 session-installer
 session-migration
 sessreg
-set
 setarch
 setcap
 setfacl
@@ -1580,9 +1512,7 @@ sha384sum
 sha512sum
 shadowconfig
 shasum
-shift
 shmsnoop-bpfcc
-shopt
 showconsolefont
 showkey
 showrgb
@@ -1609,7 +1539,6 @@ solisten-bpfcc
 sort
 sort-dctrl
 sotruss
-source
 spa-acp-tool
 spa-inspect
 spa-json-dump
@@ -1654,7 +1583,6 @@ sudoreplay
 sudo_sendlog
 sulogin
 sum
-suspend
 swapin-bpfcc
 swaplabel
 swapoff
@@ -1729,8 +1657,6 @@ telinit
 telnet
 telnet.netkit
 tempfile
-test
-then
 thermald
 thin_check
 thin_delta
@@ -1744,10 +1670,8 @@ thin_trim
 threadsnoop-bpfcc
 tic
 tificc
-time
 timedatectl
 timeout
-times
 tipc
 tldr
 tldr-hs
@@ -1767,9 +1691,7 @@ tracepath
 tracker3
 transicc
 transset
-trap
 troff
-true
 truncate
 trust
 tset
@@ -1777,8 +1699,6 @@ tsort
 tty
 ttysnoop-bpfcc
 tune2fs
-type
-typeset
 tzconfig
 tzselect
 ubuntu-bug
@@ -1798,12 +1718,9 @@ uflow
 ufw
 ugc
 ul
-ulimit
-umask
 umax_pp
 umount
 umount.udisks2
-unalias
 uname
 uncompress
 unexpand
@@ -1817,9 +1734,7 @@ unlink
 unlzma
 unmkinitramfs
 unopkg
-unset
 unshare
-until
 unxz
 unzip
 unzipsfx
@@ -1927,7 +1842,6 @@ vmwarectrl
 vpddecode
 vstp
 w
-wait
 wakeuptime-bpfcc
 wall
 watch
@@ -1939,7 +1853,6 @@ whatis
 whereis
 which
 which.debianutils
-while
 whiptail
 who
 whoami
