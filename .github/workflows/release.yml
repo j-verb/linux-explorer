@@ -16,11 +16,12 @@ jobs:
       - name: Checkout Repository Code Tracks
         uses: actions/checkout@v4
 
-      - name: Prepare Standalone Production Script Binary
+      - name: Prepare Standalone Production Scripts
         run: |
           mkdir -p build/
           cp linux-explorer build/linux-explorer
-          chmod +x build/linux-explorer
+          cp le-bash build/le-bash
+          chmod +x build/linux-explorer build/le-bash
 
       - name: Build Official Debian Distribution Package
         run: |
@@ -35,6 +36,7 @@ jobs:
         with:
           files: |
             build/linux-explorer
+            build/le-bash
             build/*.deb
           draft: false
           prerelease: false

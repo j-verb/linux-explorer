@@ -9,9 +9,10 @@ Homepage: https://github.com/j-verb/linux-explorer
 
 Package: linux-explorer
 Architecture: all
-Depends: ${misc:Depends}, bash, curl
-Suggests: man-db, tealdeer, tldr
+Depends: ${misc:Depends}, bash, curl, less
+Suggests: bsdextrautils, file, fzf, man-db, tealdeer, util-linux, whiptail
 Description: interactive Bash command lookup utility
- A lightweight terminal utility for looking up commands on a Linux system.
- It shows the command location and summary, and offers shortcuts for man,
- tldr, and cht.sh reference material.
+ Two Bash utilities for looking up Linux commands and their reference material.
+ le-bash provides a prompt-driven inspector for binary details, man pages,
+ tldr pages, command help, and cheat.sh. linux-explorer provides an interactive
+ command lookup menu with search and shortcuts to man, tldr, and cht.sh.

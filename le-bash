@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+
+CMD="$1"
+if [ -z "$CMD" ]; then
+    echo "Usage: $0 <command_name>"
+    exit 1
+fi
+
+BIN_PATH=$(which "$CMD" 2>/dev/null)
+
+# Helper functions for each view
+get_binary_info() {
+    echo "=== WHEREIS ===" && whereis "$CMD"
+    echo -e "\n=== FILE ===" && [ -n "$BIN_PATH" ] && file "$BIN_PATH"
+    echo -e "\n=== PERMISSIONS & SIZE ===" && [ -n "$BIN_PATH" ] && ls -lh "$BIN_PATH"
+    echo -e "\n=== LDD ===" && [ -n "$BIN_PATH" ] && ldd "$BIN_PATH" 2>/dev/null
+}
+
+get_tldr() {
+    command -v tldr &>/dev/null && tldr "$CMD" || echo "tldr CLI not installed."
+}
+
+get_cheat() {
+    curl -s "https://cheat.sh/${CMD}?QT"
+}
+
+get_man() {
+    man "$CMD" 2>/dev/null | col -b || echo "No man page found for $CMD."
+}
+
+get_help() {
+    "$CMD" --help 2>&1
+}
+
+# Menu loop with search option
+while true; do
+    BIN_PATH=$(which "$CMD" 2>/dev/null)
+    echo -e "\033[1;33mCMD:\033[0m $CMD | \033[1;33mPATH:\033[0m ${BIN_PATH:-NOT FOUND}"
+    echo -e "\033[1;36mSelect:\033[0m binary(b) | tldr(t) | cheat(c) | man(m) | help(h) | search(s) | quit(q)"
+    read -rp "Choice: " choice
+
+    case "$choice" in
+        b|binary)  get_binary_info | less ;;
+        t|tldr)    get_tldr | less ;;
+        c|cheat)   get_cheat | less ;;
+        m|man)     get_man | less ;;
+        h|help)    get_help | less ;;
+        s|search)
+            read -rp "Enter new command to inspect: " NEW_CMD
+            if [ -n "$NEW_CMD" ]; then
+                CMD="$NEW_CMD"
+            fi
+            ;;
+        q|quit)    echo "Exiting."; exit 0 ;;
+        *)         echo "Invalid choice. Try typing b, t, c, m, h, s, or q." ;;
+    esac
+    echo ""
+done
