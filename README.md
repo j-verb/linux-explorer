@@ -102,3 +102,7 @@ Run the repository's shell test script with:
 ```
 
 Run the test script from the repository root.
+
+## AI-Assisted Development
+
+AI tools assisted with parts of the development and documentation of Linux Explorer. The programs do not use generative AI at runtime; they retrieve information from local system utilities and the reference sources described above.
