@@ -1,3 +1,10 @@
+linux-explorer (1.0.2-1) unstable; urgency=medium
+
+  * Add the le-py Tkinter desktop command inspector to the package and releases.
+  * Document all three programs and their runtime requirements.
+
+ -- john <verber001@gmail.com>  Wed, 07 Oct 2026 12:00:00 +0000
+
 linux-explorer (1.0.1-1) unstable; urgency=medium
 
   * Package and publish the le-bash command inspector alongside linux-explorer.

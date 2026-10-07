@@ -1,0 +1,474 @@
+#!/usr/bin/env python3
+"""
+==============================================================================
+LINUX COMMAND INSPECTOR (Python Desktop GUI Edition)
+------------------------------------------------------------------------------
+A native desktop GUI reference tool providing instant access to TLDR summaries,
+cheat.sh sheets, manual pages, executable --help flags, and binary metadata.
+
+Features:
+- JetBrains Mono Typography: Styled with 'JetBrains Mono' 12pt monospaced font
+  (falls back automatically to monospace if not installed).
+- Pre-Scan Command Inventory: Automatically scans system PATH on startup,
+  caches valid executables to 'commands.txt', and populates autocompletion.
+- Manual Inventory Refresh: Re-scan $PATH and update commands.txt on demand.
+- Reordered Sidebar Menu: Top priority given to TLDR, Cheat.sh, Man pages, and Help;
+  Binary Metadata strictly placed at the bottom.
+- Shell Built-in Support: Properly handles shell built-ins (`cd`, `export`, etc.).
+- Thread-Safe GUI Execution: Asynchronous data fetching prevents UI freezes.
+- Color Tag Highlighting: Custom regex highlighting for headers, paths, flags,
+  and error messages.
+==============================================================================
+"""
+
+import os
+import re
+import shutil
+import subprocess
+import sys
+import threading
+import urllib.request
+import urllib.error
+import tkinter as tk
+from tkinter import ttk
+
+# Force standard Tkinter to prevent CustomTkinter C-binding segfaults/hangs
+USE_CTK = False
+
+COMMANDS_CACHE_FILE = "commands.txt"
+FONT_FAMILY = "JetBrains Mono"  # Target monospace font family
+FONT_SIZE = 12
+
+ANSI_ESCAPE = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+
+
+def clean_ansi(text: str) -> str:
+    """Removes raw terminal ANSI color sequences from strings."""
+    return ANSI_ESCAPE.sub('', text)
+
+
+def run_command_inventory() -> list[str]:
+    """
+    Scans all system $PATH directories for executable binaries,
+    writes/updates the inventory to 'commands.txt', and returns the sorted list.
+    """
+    binaries = set()
+    path_dirs = os.environ.get("PATH", "").split(os.pathsep)
+
+    for p_dir in path_dirs:
+        if os.path.isdir(p_dir):
+            try:
+                for entry in os.listdir(p_dir):
+                    full_path = os.path.join(p_dir, entry)
+                    if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
+                        binaries.add(entry)
+            except PermissionError:
+                continue
+
+    sorted_binaries = sorted(list(binaries))
+
+    # Write command inventory to commands.txt
+    try:
+        with open(COMMANDS_CACHE_FILE, "w", encoding="utf-8") as f:
+            for cmd in sorted_binaries:
+                f.write(f"{cmd}\n")
+    except Exception as e:
+        print(f"Warning: Could not save {COMMANDS_CACHE_FILE}: {e}", file=sys.stderr)
+
+    return sorted_binaries
+
+
+class CommandInspectorBackend:
+    """Encapsulates system utility calls and API queries."""
+
+    @staticmethod
+    def is_shell_builtin(cmd: str) -> bool:
+        """Checks if a command is a shell built-in."""
+        try:
+            res = subprocess.run(
+                ["bash", "-c", f"type -t {cmd}"],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            return res.stdout.strip() in ["builtin", "keyword", "alias"]
+        except Exception:
+            return False
+
+    @staticmethod
+    def get_tldr(cmd: str) -> str:
+        """Fetches short practical usage examples using the local 'tldr' CLI tool."""
+        if not shutil.which("tldr"):
+            return "'tldr' CLI is not installed on this system.\nInstall via package manager or 'npm install -g tldr'."
+
+        res = subprocess.run(["tldr", cmd], capture_output=True, text=True)
+        if res.returncode == 0:
+            output = clean_ansi(res.stdout)
+            output = output.replace("\r\n", "\n")
+            output = re.sub(r'(\n|\s)(- )', r'\n\n\2', output)
+            output = re.sub(r'(More information:)', r'\n\n\1', output)
+            return output.strip()
+        return f"No TLDR entry found for '{cmd}'."
+
+    @staticmethod
+    def get_cheat(cmd: str) -> str:
+        """Fetches community cheat sheets from https://cheat.sh over HTTP."""
+        url = f"https://cheat.sh/{cmd}?T"
+        req = urllib.request.Request(url, headers={"User-Agent": "curl/7.68.0"})
+        try:
+            with urllib.request.urlopen(req, timeout=5) as response:
+                body = response.read().decode("utf-8")
+                return clean_ansi(body) if body.strip() else f"No cheat sheet found for '{cmd}'."
+        except urllib.error.URLError as e:
+            return f"Failed to fetch cheat sheet from cheat.sh: {e}"
+
+    @staticmethod
+    def get_man(cmd: str) -> str:
+        """Retrieves formatted Linux manual pages stripped of backspace overstrikes."""
+        try:
+            p1 = subprocess.Popen(["man", cmd], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p2 = subprocess.Popen(["col", "-b"], stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            p1.stdout.close()
+            stdout, _ = p2.communicate()
+
+            output = clean_ansi(stdout.decode("utf-8", errors="replace"))
+            return output if output.strip() else f"No manual page found for '{cmd}'."
+        except Exception as e:
+            return f"Error retrieving manual page: {e}"
+
+    @staticmethod
+    def get_help(cmd: str) -> str:
+        """Executes the binary directly with '--help', falling back to bash help for built-ins."""
+        bin_path = shutil.which(cmd)
+
+        if not bin_path:
+            if CommandInspectorBackend.is_shell_builtin(cmd):
+                res = subprocess.run(["bash", "-c", f"help {cmd}"], capture_output=True, text=True, timeout=5)
+                out = res.stdout or res.stderr or f"No shell help entry found for built-in '{cmd}'."
+                return clean_ansi(out)
+            return f"Cannot run --help: '{cmd}' is not executable or not in PATH."
+
+        try:
+            res = subprocess.run([cmd, "--help"], capture_output=True, text=True, timeout=5)
+            out = res.stdout or res.stderr or "Command executed with --help but produced no output."
+            return clean_ansi(out)
+        except subprocess.TimeoutExpired:
+            return "Execution timed out while trying to run --help."
+        except Exception as e:
+            return f"Failed to execute command --help: {e}"
+
+    @staticmethod
+    def get_binary_info(cmd: str) -> str:
+        """Gathers binary path, file type, file permissions, size, and dynamic libraries."""
+        bin_path = shutil.which(cmd)
+
+        if not bin_path:
+            if CommandInspectorBackend.is_shell_builtin(cmd):
+                type_res = subprocess.run(["bash", "-c", f"type -a {cmd}"], capture_output=True, text=True)
+                return (
+                    f"=== SHELL BUILT-IN COMMAND ===\n"
+                    f"'{cmd}' is a shell built-in command, not an executable binary file in PATH.\n\n"
+                    f"=== TYPE INFO ===\n"
+                    f"{clean_ansi(type_res.stdout.strip())}\n\n"
+                    f"Note: Commands like 'cd', 'export', and 'alias' operate directly inside "
+                    f"the shell process and do not have dynamic links (ldd) or ELF file headers."
+                )
+            return f"Command '{cmd}' was not found in system PATH or shell built-ins."
+
+        output = []
+
+        whereis_res = subprocess.run(["whereis", cmd], capture_output=True, text=True)
+        output.append(f"=== WHEREIS ===\n{clean_ansi(whereis_res.stdout.strip())}")
+
+        file_res = subprocess.run(["file", bin_path], capture_output=True, text=True)
+        output.append(f"\n=== FILE INFO ===\n{clean_ansi(file_res.stdout.strip())}")
+
+        ls_res = subprocess.run(["ls", "-lh", bin_path], capture_output=True, text=True)
+        output.append(f"\n=== PERMISSIONS & SIZE ===\n{clean_ansi(ls_res.stdout.strip())}")
+
+        ldd_res = subprocess.run(["ldd", bin_path], capture_output=True, text=True)
+        if ldd_res.returncode == 0 and ldd_res.stdout.strip():
+            output.append(f"\n=== LDD (Shared Libraries) ===\n{clean_ansi(ldd_res.stdout.strip())}")
+        else:
+            output.append("\n=== LDD ===\nNot a dynamically linked ELF binary or ldd unavailable.")
+
+        return "\n".join(output)
+
+
+class App(tk.Tk):
+    """Main desktop application window using native Tkinter."""
+
+    def __init__(self, initial_cmd: str = "ls"):
+        super().__init__()
+
+        self.title("Linux Command Inspector GUI")
+        self.geometry("1100x700")
+        self.minsize(900, 550)
+        self.configure(bg="#1e1e1e")
+
+        # Force clean exit on window close
+        self.protocol("WM_DELETE_WINDOW", self.on_exit)
+
+        self.current_cmd = initial_cmd
+        self.active_view = "tldr"  # Default landing view set to TLDR
+        self.available_binaries = []
+
+        self._build_ui()
+        self._setup_text_tags()
+
+        # Pre-fill input with target command
+        self.cmd_entry.delete(0, tk.END)
+        self.cmd_entry.insert(0, initial_cmd)
+
+        # Run command scan inventory in background on launch
+        threading.Thread(target=self._start_inventory_scan, daemon=True).start()
+        self.inspect_command(initial_cmd)
+
+    def on_exit(self):
+        """Ensures process and lingering threads terminate immediately."""
+        try:
+            self.destroy()
+        except Exception:
+            pass
+        os._exit(0)
+
+    def _start_inventory_scan(self):
+        """Performs initial command inventory scan and updates dropdown values."""
+        binaries = run_command_inventory()
+        self.after(0, lambda: self._update_binary_list(binaries))
+
+    def on_refresh_inventory(self):
+        """Triggers a manual re-scan of $PATH and updates commands.txt and the UI."""
+        self.lbl_status.config(text="Status: Scanning $PATH...", fg="#f1fa8c")
+
+        def refresh_worker():
+            binaries = run_command_inventory()
+            self.after(0, lambda: self._on_inventory_refreshed(binaries))
+
+        threading.Thread(target=refresh_worker, daemon=True).start()
+
+    def _on_inventory_refreshed(self, binaries: list[str]):
+        """Callback executed on the main GUI thread after inventory scan completes."""
+        self._update_binary_list(binaries)
+        count = len(binaries)
+        self.lbl_status.config(text=f"Inventory Refreshed ({count} commands)", fg="#50fa7b")
+
+    def _update_binary_list(self, binaries):
+        self.available_binaries = binaries
+        if hasattr(self, "cmd_combo") and isinstance(self.cmd_combo, ttk.Combobox):
+            self.cmd_combo['values'] = self.available_binaries
+
+    def _setup_text_tags(self):
+        """Configures JetBrains Mono typography, custom text colors, and tag layering."""
+        # Base Text Color (Soft Sky Blue)
+        self.text_area.tag_configure("response", foreground="#A9DEF9", font=(FONT_FAMILY, FONT_SIZE))
+
+        # Section Headers (Bright Neon Green)
+        self.text_area.tag_configure("header", foreground="#50FA7B", font=(FONT_FAMILY, FONT_SIZE, "bold"))
+
+        # System Commands & Paths (Bright Cyan)
+        self.text_area.tag_configure("command", foreground="#8BE9FD", font=(FONT_FAMILY, FONT_SIZE, "bold"))
+
+        # Flags / Options (Gold Yellow)
+        self.text_area.tag_configure("flag", foreground="#F1FA8C", font=(FONT_FAMILY, FONT_SIZE))
+
+        # Errors & Warnings (Coral Red)
+        self.text_area.tag_configure("error", foreground="#FF5555", font=(FONT_FAMILY, FONT_SIZE, "bold"))
+
+        # Raise specific tags so they override the default 'response' base tag
+        self.text_area.tag_raise("response")
+        self.text_area.tag_raise("flag")
+        self.text_area.tag_raise("command")
+        self.text_area.tag_raise("header")
+        self.text_area.tag_raise("error")
+
+    def _build_ui(self):
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        # ---------------- TOP SEARCH BAR ----------------
+        self.top_frame = tk.Frame(self, bg="#2b2b2b", height=50)
+        self.top_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
+
+        tk.Label(self.top_frame, text="Command:", bg="#2b2b2b", fg="white", font=("Arial", 11, "bold")).pack(side="left", padx=(10, 5))
+
+        self.cmd_combo = ttk.Combobox(self.top_frame, font=("Arial", 11), width=22)
+        self.cmd_combo.pack(side="left", padx=5)
+        self.cmd_combo.bind("<Return>", lambda e: self.on_search())
+        self.cmd_entry = self.cmd_combo
+
+        # Primary Search Button
+        btn_inspect = tk.Button(
+            self.top_frame,
+            text=" 🔍 Inspect ",
+            command=self.on_search,
+            bg="#007acc",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            bd=1,
+            relief="raised"
+        )
+        btn_inspect.pack(side="left", padx=5)
+
+        # Right-aligned Action Buttons
+        btn_quit = tk.Button(
+            self.top_frame,
+            text=" Quit App ",
+            command=self.on_exit,
+            bg="#d9534f",
+            fg="white",
+            font=("Arial", 10, "bold"),
+            bd=1,
+            relief="raised"
+        )
+        btn_quit.pack(side="right", padx=(5, 10))
+
+        btn_refresh = tk.Button(
+            self.top_frame,
+            text=" 🔄 Refresh Inventory ",
+            command=self.on_refresh_inventory,
+            bg="#444444",
+            fg="white",
+            font=("Arial", 10),
+            bd=1,
+            relief="raised"
+        )
+        btn_refresh.pack(side="right", padx=5)
+
+        self.lbl_status = tk.Label(self.top_frame, text="Path: ...", bg="#2b2b2b", fg="#00ff00", font=("Arial", 10))
+        self.lbl_status.pack(side="right", padx=10)
+
+        # ---------------- SIDEBAR MENU (ORDER STRICTLY FIXED) ----------------
+        self.sidebar = tk.Frame(self, bg="#1e1e1e", width=180)
+        self.sidebar.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+
+        # 1. TLDR Summary
+        tk.Button(self.sidebar, text="⚡ TLDR Summary", command=lambda: self.switch_view("tldr"), bg="#333", fg="white", font=("Arial", 10), anchor="w", relief="flat", bd=1).pack(fill="x", padx=5, pady=4)
+
+        # 2. Cheat.sh
+        tk.Button(self.sidebar, text="📖 Cheat.sh", command=lambda: self.switch_view("cheat"), bg="#333", fg="white", font=("Arial", 10), anchor="w", relief="flat", bd=1).pack(fill="x", padx=5, pady=4)
+
+        # 3. Manual Page
+        tk.Button(self.sidebar, text="📜 Manual Page", command=lambda: self.switch_view("man"), bg="#333", fg="white", font=("Arial", 10), anchor="w", relief="flat", bd=1).pack(fill="x", padx=5, pady=4)
+
+        # 4. Executable --help
+        tk.Button(self.sidebar, text="🛠 Executable --help", command=lambda: self.switch_view("help"), bg="#333", fg="white", font=("Arial", 10), anchor="w", relief="flat", bd=1).pack(fill="x", padx=5, pady=4)
+
+        # 5. Binary Metadata (Positioned strictly at the bottom)
+        tk.Button(self.sidebar, text="📦 Binary Metadata", command=lambda: self.switch_view("binary"), bg="#333", fg="white", font=("Arial", 10), anchor="w", relief="flat", bd=1).pack(fill="x", padx=5, pady=(20, 4))
+
+        # ---------------- OUTPUT DISPLAY ----------------
+        self.text_frame = tk.Frame(self, bg="#1e1e1e")
+        self.text_frame.grid(row=1, column=1, sticky="nsew", padx=(5, 10), pady=5)
+
+        self.text_area = tk.Text(
+            self.text_frame,
+            wrap="word",
+            bg="#1e1e1e",
+            fg="#dcdcdc",
+            insertbackground="white",
+            font=(FONT_FAMILY, FONT_SIZE),
+            bd=0,
+            highlightthickness=0
+        )
+        self.scrollbar = ttk.Scrollbar(self.text_frame, orient="vertical", command=self.text_area.yview)
+        self.text_area.configure(yscrollcommand=self.scrollbar.set)
+
+        self.text_area.pack(side="left", fill="both", expand=True, padx=5, pady=5)
+        self.scrollbar.pack(side="right", fill="y")
+
+    def on_search(self):
+        cmd = self.cmd_entry.get().strip()
+        if cmd:
+            self.inspect_command(cmd)
+
+    def inspect_command(self, cmd: str):
+        self.current_cmd = cmd
+        path = shutil.which(cmd)
+
+        if path:
+            path_str = f"Path: {path}"
+            status_color = "#00ff00"
+        elif CommandInspectorBackend.is_shell_builtin(cmd):
+            path_str = "Type: Shell Built-in"
+            status_color = "#00ffff"
+        else:
+            path_str = f"Path: NOT FOUND ({cmd})"
+            status_color = "#ff0000"
+
+        self.lbl_status.config(text=path_str, fg=status_color)
+        self.load_view_content()
+
+    def switch_view(self, view_name: str):
+        self.active_view = view_name
+        self.load_view_content()
+
+    def load_view_content(self):
+        self.text_area.delete("1.0", tk.END)
+        self.text_area.insert(tk.END, f"Loading {self.active_view} view for '{self.current_cmd}'...\n", "response")
+
+        def fetch():
+            try:
+                if self.active_view == "tldr":
+                    content = CommandInspectorBackend.get_tldr(self.current_cmd)
+                elif self.active_view == "cheat":
+                    content = CommandInspectorBackend.get_cheat(self.current_cmd)
+                elif self.active_view == "man":
+                    content = CommandInspectorBackend.get_man(self.current_cmd)
+                elif self.active_view == "help":
+                    content = CommandInspectorBackend.get_help(self.current_cmd)
+                elif self.active_view == "binary":
+                    content = CommandInspectorBackend.get_binary_info(self.current_cmd)
+                else:
+                    content = "Unknown view requested."
+            except Exception as e:
+                content = f"Error loading content: {e}"
+
+            self.after(0, lambda: self.update_text_area(content))
+
+        threading.Thread(target=fetch, daemon=True).start()
+
+    def apply_formatting_tags(self):
+        """Scans output text and applies high-contrast regex highlighting tags."""
+        # 1. Base response tag across all text
+        self.text_area.tag_add("response", "1.0", tk.END)
+
+        # 2. Section headers
+        self._highlight_pattern(r"=== .* ===", "header")
+        self._highlight_pattern(r"^#+ .*", "header")
+
+        # 3. System file paths (/usr/bin/grep, /lib64/...)
+        self._highlight_pattern(r"/[a-zA-Z0-9_\-\./]+", "command")
+
+        # 4. Command flags (-lh, --help, -v)
+        self._highlight_pattern(r"(?<=\s)-{1,2}[a-zA-Z0-9\--]+", "flag")
+
+        # 5. Error & warning messages
+        self._highlight_pattern(r"Error.*|Failed.*|Not found.*|not found.*", "error")
+
+    def _highlight_pattern(self, pattern: str, tag_name: str):
+        """Finds regex matches in the text widget and assigns tag styling."""
+        content = self.text_area.get("1.0", tk.END)
+        for match in re.finditer(pattern, content, re.MULTILINE):
+            start_index = f"1.0+{match.start()}c"
+            end_index = f"1.0+{match.end()}c"
+            self.text_area.tag_add(tag_name, start_index, end_index)
+
+    def update_text_area(self, content: str):
+        """Replaces text area content and re-applies formatting tags."""
+        self.text_area.delete("1.0", tk.END)
+        self.text_area.insert(tk.END, content)
+        self.apply_formatting_tags()
+
+
+if __name__ == "__main__":
+    initial_target = "ls"
+
+    if len(sys.argv) > 1 and not sys.argv[1].endswith(".py") and not sys.argv[0].endswith(sys.argv[1]):
+        initial_target = sys.argv[1]
+
+    try:
+        app = App(initial_cmd=initial_target)
+        app.mainloop()
+    except Exception as err:
+        print(f"Error starting GUI app: {err}", file=sys.stderr)

@@ -1,6 +1,6 @@
 # Linux Explorer
 
-Linux Explorer is a pair of Bash command-line tools for looking up installed Linux commands and opening their reference material. The Debian package installs both programs: `le-bash` and `linux-explorer`.
+Linux Explorer is a small suite for exploring Linux commands and their reference material. It includes two terminal tools, `le-bash` and `linux-explorer`, plus the Tkinter desktop app `le-py`. The Debian package installs all three.
 
 ## le-bash
 
@@ -45,17 +45,30 @@ The menu can open the command's man page or tldr page, query cht.sh, search for 
 
 The command index is written to `commands.txt` in the current working directory each time the program starts. Run it from a directory where creating or replacing that file is acceptable.
 
+## le-py
+
+`le-py` is a desktop GUI for command lookup, built with Python's standard Tkinter library. It provides a command entry with PATH-based completion, a status display for executable paths or shell built-ins, and a scrollable reference pane. The sidebar opens TLDR summaries, cheat.sh results, manual pages, executable `--help` output, and binary metadata. Online cheat sheets require an internet connection; TLDR pages require a compatible `tldr` client.
+
+Start the GUI with an optional command name (it defaults to `ls`):
+
+```bash
+le-py
+le-py grep
+```
+
+The command inventory is scanned from `$PATH` at startup and can be refreshed from the window. Like `linux-explorer`, `le-py` writes the inventory to `commands.txt` in the current working directory, replacing any existing file with that name. A graphical desktop session is required.
+
 ## Installation
 
 ### Debian and Ubuntu package
 
-Tagged `v*` releases publish the Debian package and both standalone scripts on the [GitHub Releases page](https://github.com/j-verb/linux-explorer/releases). Install a downloaded package with:
+Tagged `v*` releases publish the Debian package and all three standalone programs on the [GitHub Releases page](https://github.com/j-verb/linux-explorer/releases). Install a downloaded package with:
 
 ```bash
 sudo apt install ./linux-explorer_*_all.deb
 ```
 
-The package installs `/usr/bin/le-bash` and `/usr/bin/linux-explorer`. To build the package from this source tree, install `debhelper` and `dpkg-dev`, then run:
+The package installs `/usr/bin/le-bash`, `/usr/bin/linux-explorer`, and `/usr/bin/le-py`. It depends on Bash, Python 3 with Tkinter, `curl`, and `less`. To build the package from this source tree, install `debhelper` and `dpkg-dev`, then run:
 
 ```bash
 dpkg-buildpackage -us -uc -b
@@ -65,19 +78,20 @@ The resulting `.deb` is written to the parent directory.
 
 ### Run from source
 
-Clone the repository, make both scripts executable, and invoke either one:
+Clone the repository, make the programs executable, and invoke the tool you want:
 
 ```bash
 git clone https://github.com/j-verb/linux-explorer.git
 cd linux-explorer
-chmod +x le-bash linux-explorer
+chmod +x le-bash linux-explorer le-py
 ./le-bash grep
 ./linux-explorer grep
+./le-py grep
 ```
 
 ## Requirements
 
-Both programs require Bash and `curl` for their online cheat-sheet lookup. `le-bash` also requires `less` for paging. `linux-explorer` works best with `whiptail` and `fzf`; its reference actions can use `man`/`whatis`, tldr, and `curl` for cht.sh. Optional utilities used by `le-bash` include `file`, `whereis`, `man`, and `col`. On Debian/Ubuntu, these are provided by packages including `whiptail`, `fzf`, `tealdeer`, `man-db`, `bsdextrautils`, `file`, and `util-linux`.
+Both Bash programs require Bash and `curl` for their online cheat-sheet lookups; `le-bash` also uses `less` for paging. `le-py` requires Python 3, Tkinter, and a graphical desktop session; it uses Python's standard library for HTTP requests. Optional reference tools include `whiptail`, `fzf`, a `tldr` client, `man`/`whatis`, `col`, `file`, and `whereis`. On Debian/Ubuntu, these are available from packages such as `python3-tk`, `whiptail`, `fzf`, `tealdeer`, `man-db`, `bsdextrautils`, `file`, and `util-linux`.
 
 ## Tests
 

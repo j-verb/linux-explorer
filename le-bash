@@ -1,58 +1,110 @@
 #!/usr/bin/env bash
+# ==============================================================================
+# LINUX COMMAND INSPECTOR
+# ------------------------------------------------------------------------------
+# An interactive command-line reference utility that provides instant access
+# to local binary metadata, TLDR summaries, cheat sheets, manual pages,
+# and executable help flags—all accessible through compact shortcuts
+# and dynamic on-the-fly search.
+# ==============================================================================
 
+# Capture the target command passed as the first positional argument (e.g., ./script.py grep)
 CMD="$1"
+
+# Check if the user failed to provide a command argument
 if [ -z "$CMD" ]; then
     echo "Usage: $0 <command_name>"
+    echo "Inspects binary metadata, tldr, cheat.sh, man pages, and --help output."
     exit 1
 fi
 
-BIN_PATH=$(which "$CMD" 2>/dev/null)
+# ------------------------------------------------------------------------------
+# HELPER FUNCTIONS
+# ------------------------------------------------------------------------------
 
-# Helper functions for each view
+# 1. Gathers system binary details (whereis path, file type, file permissions, shared libraries)
 get_binary_info() {
+    # Resolve the absolute path of the binary in the user's $PATH (returns empty if not found)
+    BIN_PATH=$(which "$CMD" 2>/dev/null)
+
     echo "=== WHEREIS ===" && whereis "$CMD"
+
+    # Check if the binary path exists before running commands against it
     echo -e "\n=== FILE ===" && [ -n "$BIN_PATH" ] && file "$BIN_PATH"
     echo -e "\n=== PERMISSIONS & SIZE ===" && [ -n "$BIN_PATH" ] && ls -lh "$BIN_PATH"
+
+    # Suppress stderr to avoid trash output if 'ldd' fails on non-ELF files
     echo -e "\n=== LDD ===" && [ -n "$BIN_PATH" ] && ldd "$BIN_PATH" 2>/dev/null
 }
 
+# 2. Fetches simplified examples using the local 'tldr' utility
 get_tldr() {
-    command -v tldr &>/dev/null && tldr "$CMD" || echo "tldr CLI not installed."
+    # Check if 'tldr' is installed on the user's system
+    if command -v tldr &>/dev/null; then
+        # Run tldr and strip ANSI color escape codes (e.g., \x1B[...m) so output stays clean
+        tldr "$CMD" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g'
+    else
+        echo "tldr CLI not installed."
+    fi
 }
 
+# 3. Downloads cheat sheet output directly from the cheat.sh web service
 get_cheat() {
-    curl -s "https://cheat.sh/${CMD}?QT"
+    # -s enables silent mode (hides curl progress bar), ?QT requests plain text output
+    curl -s "https://cheat.sh/${CMD}?QT" | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g'
 }
 
+# 4. Retrieves standard Linux manual pages
 get_man() {
-    man "$CMD" 2>/dev/null | col -b || echo "No man page found for $CMD."
+    # 'col -b' strips legacy backspace bolding/underlining (e.g., c\bc)
+    # 'sed' strips modern ANSI escape color sequences
+    man "$CMD" 2>/dev/null | col -b | sed -E 's/\x1B\[[0-9;]*[a-zA-Z]//g' || echo "No man page found for $CMD."
 }
 
+# 5. Calls the binary's native help option
 get_help() {
+    # Redirect stderr to stdout (2>&1) so error messages are captured cleanly
     "$CMD" --help 2>&1
 }
 
-# Menu loop with search option
+# ------------------------------------------------------------------------------
+# INTERACTIVE MENU LOOP
+# ------------------------------------------------------------------------------
+
 while true; do
+    # Resolve the binary path dynamically for the current command name
     BIN_PATH=$(which "$CMD" 2>/dev/null)
+
+    # Display the current target command header with status color indicators
     echo -e "\033[1;33mCMD:\033[0m $CMD | \033[1;33mPATH:\033[0m ${BIN_PATH:-NOT FOUND}"
+
+    # Display compact shortcut prompt line
     echo -e "\033[1;36mSelect:\033[0m binary(b) | tldr(t) | cheat(c) | man(m) | help(h) | search(s) | quit(q)"
+
+    # Prompt user for input and store choice in the 'choice' variable
     read -rp "Choice: " choice
 
+    # Parse user selection (supports short keys like 'b' or full names like 'binary')
     case "$choice" in
-        b|binary)  get_binary_info | less ;;
+        b|binary)  get_binary_info | less ;;  # Pipe output through 'less' pager for non-blocking reading
         t|tldr)    get_tldr | less ;;
         c|cheat)   get_cheat | less ;;
         m|man)     get_man | less ;;
         h|help)    get_help | less ;;
         s|search)
+            # Prompt the user for a new binary target without exiting the loop
             read -rp "Enter new command to inspect: " NEW_CMD
             if [ -n "$NEW_CMD" ]; then
-                CMD="$NEW_CMD"
+                CMD="$NEW_CMD"  # Update the active command variable
             fi
             ;;
-        q|quit)    echo "Exiting."; exit 0 ;;
-        *)         echo "Invalid choice. Try typing b, t, c, m, h, s, or q." ;;
+        q|quit)
+            echo "Exiting."
+            exit 0  # Cleanly exit the script loop
+            ;;
+        *)
+            echo "Invalid choice. Try typing b, t, c, m, h, s, or q."
+            ;;
     esac
-    echo ""
+    echo "" # Empty line separator between user iterations
 done

@@ -21,7 +21,8 @@ jobs:
           mkdir -p build/
           cp linux-explorer build/linux-explorer
           cp le-bash build/le-bash
-          chmod +x build/linux-explorer build/le-bash
+          cp le-py build/le-py
+          chmod +x build/linux-explorer build/le-bash build/le-py
 
       - name: Build Official Debian Distribution Package
         run: |
@@ -37,6 +38,7 @@ jobs:
           files: |
             build/linux-explorer
             build/le-bash
+            build/le-py
             build/*.deb
           draft: false
           prerelease: false
