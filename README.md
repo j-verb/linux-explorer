@@ -103,6 +103,16 @@ Run the repository's shell test script with:
 
 Run the test script from the repository root.
 
-## AI-Assisted Development
+## Developer Disclosure & Architecture
 
-AI tools assisted with parts of the development and documentation of Linux Explorer. The programs do not use generative AI at runtime; they retrieve information from local system utilities and the reference sources described above.
+AI tools were used as development and documentation aids for portions of this repository. Assistance was applied to application code and project documentation; AI-generated changes were reviewed and incorporated by the developer, and individual AI-authored lines were not tracked. The programs do not use generative AI at runtime.
+
+The project has three independent front ends:
+
+- `le-bash` is a prompt-driven Bash command inspector that gathers local binary details and opens local or online reference material.
+- `linux-explorer` is a Bash terminal-menu command lookup tool that builds a command index and opens reference sources through system utilities.
+- `le-py` is a Python/Tkinter desktop interface. Its backend calls local system tools and fetches cheat sheets from cheat.sh.
+
+All three present information from local system utilities or the reference sources described above; AI is not part of their runtime architecture.
+
+Validation is available through `./run-tests.sh`. The current automated suite exercises `linux-explorer` argument handling, command lookup, menu input and navigation, and the cheat-sheet action. It does not provide automated coverage for `le-bash` or the Tkinter GUI.
