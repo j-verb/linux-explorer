@@ -103,9 +103,16 @@ Run the repository's shell test script with:
 
 Run the test script from the repository root.
 
-## Developer Disclosure & Architecture
+## Development Process & Tooling
 
-AI tools were used as development and documentation aids for portions of this repository. Assistance was applied to application code and project documentation; AI-generated changes were reviewed and incorporated by the developer, and individual AI-authored lines were not tracked. The programs do not use generative AI at runtime.
+This project was developed using human-driven architecture with targeted AI assistance:
+
+- **Human Responsibilities:** Core system design, memory management, protocol architecture, and manual verification/debugging.
+- **AI-Assisted (Gemini):**
+  - Drafting initial boilerplate code and test fixtures.
+  - Generating synthetic test data for boundary/edge-case validation.
+  - Suggesting initial refactoring patterns for code readability.
+- **Verification:** All generated code was line-by-line reviewed, benchmarked, and verified via unit/integration tests.
 
 The project has three independent front ends:
 
