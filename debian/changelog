@@ -1,3 +1,10 @@
+linux-explorer (1.0.3-1) unstable; urgency=medium
+
+  * Split le-bash and le-py into their own projects and packages.
+  * Keep this package focused on the linux-explorer terminal utility.
+
+ -- john <verber001@gmail.com>  Mon, 02 Nov 2026 18:00:00 -0800
+
 linux-explorer (1.0.2-1) unstable; urgency=medium
 
   * Add the le-py Tkinter desktop command inspector to the package and releases.

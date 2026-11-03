@@ -9,11 +9,8 @@ Homepage: https://github.com/j-verb/linux-explorer
 
 Package: linux-explorer
 Architecture: all
-Depends: ${misc:Depends}, bash, curl, less, python3, python3-tk
+Depends: ${misc:Depends}, bash, curl
 Suggests: bsdextrautils, file, fzf, man-db, tealdeer, util-linux, whiptail
-Description: Linux command lookup tools for terminal and desktop
- A suite of two Bash command-line utilities and a Python/Tkinter desktop app
- for looking up installed commands and accessing their reference material.
- le-bash provides a prompt-driven command inspector. linux-explorer offers
- an interactive terminal menu and command search. le-py provides a desktop
- interface with PATH completion, reference views, and binary metadata.
+Description: Interactive command lookup utility for Linux
+ A Bash terminal-menu utility for finding installed commands and accessing
+ their manual pages, TLDR pages, and online cheat sheets.
